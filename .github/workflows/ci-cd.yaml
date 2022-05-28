@@ -1,28 +1,32 @@
 name: Continuous Integration and Deployment
 
 on: 
-
   push:
     branches:
       - main
-
   pull_request:
     types: [opened, synchronize, reopened]
 
+env:
+  DONTNET_VERSION: '5.0.x'
+  AZURE_WEBAPP_NAME: sample-github-ci-cd
 
 jobs:
   epic-cicd-build:
     runs-on: ubuntu-latest
     steps:
+
+      # Checkout the repo
       - name: Check out code 👌
         uses: actions/checkout@v2
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       
+      # Setup .NET Core SDK
       - name: Setup .NET 5 😎
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-versions: '5.0.x'
+          dotnet-versions: ${{ env.DONTNET_VERSION }}
 
       - name: Restore dependencies ⚒️
         run: dotnet restore
@@ -40,8 +44,22 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+      # Run dotnet build
       - name: Build app 🚀
         run: dotnet build -c Release --no-restore
 
+      # Run automated tests
       - name: Run automated tests 🧪
         run: dotnet test -c Release --no-build
+      
+      # Publish
+      - name: Publish app 💻
+        run: dotnet publish -c Release -o ./out
+
+      # Deploy to Azure Web apps
+      - name: Deploy to Azure Web Apps (publish profile credentials) 🚢
+        uses: azure/webapps-deploy@v2
+        with: 
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}                       # app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_SECRET  }} # Define secret variable in repository settings as per action documentation
+          package: ./out                                               # package: '${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/myapp'
