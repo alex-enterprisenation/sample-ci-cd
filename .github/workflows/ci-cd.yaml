@@ -28,15 +28,12 @@ jobs:
         with:
           dotnet-versions: ${{ env.DONTNET_VERSION }}
 
-      - name: Restore dependencies ⚒️
-        run: dotnet restore
-
+      # Setup SonarCloud & Gate check
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      
       - name: SonarQube Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@master
         # Force to fail step after specific time
@@ -45,6 +42,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       # Run dotnet build
+      - name: Restore dependencies ⚒️
+        run: dotnet restore
       - name: Build app 🚀
         run: dotnet build -c Release --no-restore
 
